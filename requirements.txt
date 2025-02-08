@@ -1,0 +1,25 @@
+langchain
+openai
+langchain-community
+langchain-openai
+huggingface_hub
+langchain-huggingface
+transformers
+torch
+sentence-transformers
+pypdf
+faiss-cpu
+pandas
+tiktoken
+gradio  # Interface utilisateur pour le chatbot
+python-dotenv
+fastapi  # API pour interagir avec le RAG
+uvicorn  # Serveur ASGI pour exécuter FastAPI
+openpyxl
+pymupdf
+docx2txt
+unstructured
+python-pptx
+langchain-ollama
+
+

@@ -1,0 +1,37 @@
+# Ignorer le fichier des variables d'environnement
+.env
+
+# Ignorer les dossiers contenant des données
+data/
+data_small/
+
+# Ignorer les fichiers et dossiers générés par Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorer les fichiers de logs
+logs/
+*.log
+
+# Ignorer les fichiers et dossiers de cache
+.cache/
+.ipynb_checkpoints/
+
+# Ignorer les fichiers de virtualenv
+venv/
+.env/
+.venv/
+
+# Ignorer les fichiers de compilation et IDE
+*.swp
+*.swo
+.vscode/
+.idea/
+*.iml
+
+# Ignorer les fichiers Docker temporaires
+*.pid
+*.tar
+docker-compose.override.yml
