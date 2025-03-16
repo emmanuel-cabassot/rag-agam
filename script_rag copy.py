@@ -7,13 +7,14 @@ from langchain_community.document_loaders import (
     UnstructuredPowerPointLoader, UnstructuredExcelLoader, UnstructuredRTFLoader,
     JSONLoader, UnstructuredXMLLoader
 )
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter, TokenTextSplitter
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage
+import tiktoken
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -39,7 +40,6 @@ EXTENSION_LOADERS = {
     ".xml": UnstructuredXMLLoader
 }
 
-
 print(f"🔍 Recherche de fichiers dans {DATA_DIR}...")
 
 documents = []
@@ -49,8 +49,6 @@ def extract_text_and_tables_pymupdf(pdf_path):
     """ Extrait le texte et les tableaux d'un PDF avec PyMuPDF et nettoie les données. """
     doc = fitz.open(pdf_path)
     full_text = []
-    tables = []
-
     for page in doc:
         text = page.get_text("text")  # Extrait le texte brut
         text = clean_text(text)
@@ -105,20 +103,55 @@ for root, _, files in os.walk(DATA_DIR):
 
 print(f"📂 **Total de documents chargés : {len(documents)}**")
 
-# Afficher un extrait des documents avant le split
-print("\n🔍 **Exemple de texte extrait :**")
-print(documents[0].page_content[:1000])
+# Fonction pour estimer le nombre de tokens
+def estimate_tokens(text, encoding_name="cl100k_base"):
+    encoding = tiktoken.get_encoding(encoding_name)
+    return len(encoding.encode(text))
 
-# Ajout du Text Splitter avec une meilleure configuration
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1200,  # Segments plus longs pour plus de contexte
-    chunk_overlap=200
+# Étape 1 : Découpage structurel
+structured_splitter = RecursiveCharacterTextSplitter(
+    separators=["\n\n", "\n", ".", " "],  # Priorité : paragraphes > phrases > mots
+    chunk_size=2000,  # Segments larges pour conserver les sections
+    chunk_overlap=300  # Conserver du contexte
 )
 
-split_documents = text_splitter.split_documents(documents)
-print(f"📂 **Total de segments après découpage : {len(split_documents)}**")
+# Étape 2 : Raffinement par tokens
+token_splitter = TokenTextSplitter(
+    encoding_name="cl100k_base",  # Encodage utilisé par OpenAI
+    chunk_size=300,  # Nombre de tokens maximum par chunk
+    chunk_overlap=50  # Tokens de chevauchement pour garder du contexte
+)
 
-# Enregistrement des segments dans un fichier texte unique
+# Découpage hybride
+def hybrid_split(documents):
+    final_chunks = []
+    for doc in documents:
+        # Découper en gros chunks basés sur la structure
+        large_chunks = structured_splitter.split_text(doc.page_content)
+        
+        # Raffiner chaque chunk large en chunks basés sur les tokens
+        for chunk in large_chunks:
+            tokenized_chunks = token_splitter.split_text(chunk)
+            for token_chunk in tokenized_chunks:
+                final_chunks.append(
+                    Document(
+                        page_content=token_chunk,
+                        metadata={
+                            "source": doc.metadata.get("source", "Inconnu"),
+                            "page": doc.metadata.get("page", "N/A")
+                        }
+                    )
+                )
+    return final_chunks
+
+# Utiliser la fonction sur les documents chargés
+split_documents = hybrid_split(documents)
+
+print(f"**Total de segments après découpage : {len(split_documents)}**")
+print(f"Exemple d'un chunk : {split_documents[0].page_content}")
+print(f"Métadonnées associées : {split_documents[0].metadata}")
+
+# Enregistrer les segments dans un fichier texte
 output_file = "documents_transformes.txt"
 with open(output_file, "w", encoding="utf-8") as f:
     for i, doc in enumerate(split_documents):
@@ -126,12 +159,10 @@ with open(output_file, "w", encoding="utf-8") as f:
         f.write(doc.page_content)
         f.write("\n\n")
 
-print(f"✅ Segments enregistrés dans le fichier '{output_file}'.")
+print(f"Segments enregistrés dans le fichier '{output_file}'.")
 
 # Vérification de l'index FAISS
 index_path = "index_agam"
-
-# Suppression et recréation complète de l'index FAISS
 if os.path.exists(index_path):
     print("🛠 Suppression de l'index FAISS existant...")
     os.system(f"rm -r {index_path}")
@@ -147,32 +178,4 @@ bge_embeddings = HuggingFaceEmbeddings(
 # Créer le vectorstore avec les nouveaux embeddings
 vectorstore = FAISS.from_documents(split_documents, bge_embeddings)
 vectorstore.save_local(index_path)
-print("✅ Index FAISS enregistré dans 'index_agam/' !")
-
-# Vérifier le nombre de vecteurs dans l'index
-print(f"🔍 Nombre de vecteurs dans l'index FAISS : {vectorstore.index.ntotal}")
-
-# Test de récupération et génération de réponse
-print("\n🔍 Test du système RAG...")
-
-# Nouvelle question pour tester le système
-query = "Quels sont les défis et opportunités pour l'industrie du cinéma à Marseille ?"
-
-# Augmentation du nombre de documents récupérés (k=15)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 15})
-
-# Initialiser le modèle LLM
-llm = ChatOpenAI(api_key=openai_api_key, model_name="gpt-4", temperature=0, request_timeout=15)
-
-# Créer la chaîne de récupération QA
-qa_chain = RetrievalQA.from_chain_type(llm, retriever=retriever)
-
-# Récupérer les documents pertinents
-retrieved_docs = retriever.get_relevant_documents(query)
-cleaned_text = "\n".join(doc.page_content for doc in retrieved_docs).strip()
-
-# Générer la réponse
-response = llm.invoke([HumanMessage(content=f"En te basant uniquement sur ces extraits, résume les défis et opportunités du cinéma à Marseille :\n\n{cleaned_text}")])
-
-print("\n📝 Réponse générée par l'IA :")
-print(response.content)
+print("Index FAISS enregistré dans 'index_agam/' !")

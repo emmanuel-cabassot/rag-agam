@@ -1,3 +1,6 @@
+#construction de l'image ici nous l'appelerons langchainv2-app
+#docker build -t langchainv2-app .
+#l'image est maintenant créer, il ne nous manque plus qu'a créer le container qui sera basé sur le fichier docker-compose.yml
 # Utiliser une image NVIDIA CUDA compatible
 FROM nvidia/cuda:12.1.1-base-ubuntu22.04  
 

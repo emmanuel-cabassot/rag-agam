@@ -1,3 +1,9 @@
+
+# Avant de lancer le conteneur, vérifier que l'image est bien construite en consultant le Dockerfile.
+# Une fois l'image lancée
+# docker compose up --build
+# Si il est déjà créer lancer docker start  langchain_app_v2
+# docker exec -it langchain_app_v2 /bin/bash
 services:
   app:
     build: .
