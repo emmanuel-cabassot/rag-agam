@@ -11,10 +11,10 @@ pypdf
 faiss-cpu
 pandas
 tiktoken
-gradio  # Interface utilisateur pour le chatbot
+gradio
 python-dotenv
-fastapi  # API pour interagir avec le RAG
-uvicorn  # Serveur ASGI pour exécuter FastAPI
+fastapi
+uvicorn
 openpyxl
 pymupdf
 docx2txt
