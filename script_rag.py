@@ -24,7 +24,7 @@ if not openai_api_key:
     raise ValueError("❌ Clé API OpenAI non définie. Vérifiez le fichier .env.")
 
 # Définir le dossier contenant les fichiers
-DATA_DIR = "data"
+DATA_DIR = "data_small"
 
 # Définition des loaders pour différents formats de fichiers
 EXTENSION_LOADERS = {
@@ -41,7 +41,7 @@ EXTENSION_LOADERS = {
 }
 
 print(f"🔍 Recherche de fichiers dans {DATA_DIR}...")
-
+    
 documents = []
 
 # Fonction pour extraire le texte et les tableaux d'un PDF avec PyMuPDF
@@ -147,19 +147,31 @@ def hybrid_split(documents):
 # Utiliser la fonction sur les documents chargés
 split_documents = hybrid_split(documents)
 
-print(f"**Total de segments après découpage : {len(split_documents)}**")
-print(f"Exemple d'un chunk : {split_documents[0].page_content}")
-print(f"Métadonnées associées : {split_documents[0].metadata}")
+print(f"📂 **Total de segments après découpage : {len(split_documents)}**")
+print(f"🔍 Exemple d'un chunk : {split_documents[0].page_content}")
+print(f"🔖 Métadonnées associées : {split_documents[0].metadata}")
 
-# Enregistrer les segments dans un fichier texte
-output_file = "documents_transformes.txt"
+# Définir le dossier de sortie
+OUTPUT_DIR = "chunks_output"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Trouver le prochain numéro de version disponible
+file_number = 1
+while os.path.exists(os.path.join(OUTPUT_DIR, f"chunks_{file_number}.txt")):
+    file_number += 1
+
+# Définir le chemin du fichier de sortie avec la version
+output_file = os.path.join(OUTPUT_DIR, f"chunks_{file_number}.txt")
+
+# Enregistrer les segments dans le fichier
 with open(output_file, "w", encoding="utf-8") as f:
     for i, doc in enumerate(split_documents):
         f.write(f"--- Segment {i+1} ---\n")
         f.write(doc.page_content)
         f.write("\n\n")
 
-print(f"Segments enregistrés dans le fichier '{output_file}'.")
+print(f"✅ Segments enregistrés dans le fichier '{output_file}'.")
+
 
 # Vérification de l'index FAISS
 index_path = "index_agam"
@@ -178,4 +190,4 @@ bge_embeddings = HuggingFaceEmbeddings(
 # Créer le vectorstore avec les nouveaux embeddings
 vectorstore = FAISS.from_documents(split_documents, bge_embeddings)
 vectorstore.save_local(index_path)
-print("Index FAISS enregistré dans 'index_agam/' !")
+print("✅ Index FAISS enregistré dans 'index_agam/' !")

@@ -4,6 +4,7 @@
 # Ignorer les dossiers contenant des données
 data/
 data_small/
+index_agam/
 
 # Ignorer les fichiers et dossiers générés par Python
 __pycache__/
