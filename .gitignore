@@ -5,6 +5,9 @@
 data/
 data_small/
 index_agam/
+resultats_pdf/
+pdf_extractions/
+fourre_tout/
 
 # Ignorer les fichiers et dossiers générés par Python
 __pycache__/

@@ -27,3 +27,4 @@ services:
             - driver: nvidia
               count: all  # ou le nombre de GPU que tu veux utiliser
               capabilities: [gpu]
+
