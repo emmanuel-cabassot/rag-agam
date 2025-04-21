@@ -1,29 +1,48 @@
-
 # Avant de lancer le conteneur, vérifier que l'image est bien construite en consultant le Dockerfile.
 # Une fois l'image lancée
-# docker compose up --build
-# Si il est déjà créer lancer docker start  langchain_app_v2
-# docker exec -it langchain_app_v2 /bin/bash
+#   docker compose up --build
+# Si il est déjà créé, lancer
+#   docker start  langchain_app_v2
+#   docker exec -it langchain_app_v2 /bin/bash
+
 services:
   app:
     build: .
     container_name: langchain_app_v2
+
+    # Volumes :
+    # - le dossier courant monté dans /app pour partager ton code
+    # - hf_cache : stocke ~/.cache/huggingface et évite de re‑télécharger les modèles
     volumes:
-      - .:/app  # Monte ton dossier actuel dans /app du conteneur
+      - .:/app                         # Monte ton dossier actuel dans /app du conteneur
+      - hf_cache:/root/.cache/huggingface   # <-- nouveau volume pour le cache HF
+
     working_dir: /app
     stdin_open: true
     tty: true
+
+    # Port externe -> interne (Gradio / FastAPI, etc.)
     ports:
-      - "7860:7860"  # Expose le port 7860
+      - "7860:7860"                    # Expose le port 7860
+
+    # Permettre d'accéder à l'host via host.docker.internal
     extra_hosts:
       host.docker.internal: host-gateway
 
+    # Variables d'environnement (dont HF_TOKEN) stockées dans .env
     env_file:
-      - .env  # Fichier contenant vos variables d'environnement
+      - .env                           # Fichier contenant vos variables d'environnement
+
+    # Réservation GPU pour Docker + NVIDIA Container Runtime
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: all  # ou le nombre de GPU que tu veux utiliser
+              count: all               # ou le nombre de GPU que tu veux utiliser
               capabilities: [gpu]
+
+# Définition du volume nommé pour le cache Hugging Face
+volumes:
+  hf_cache:
+

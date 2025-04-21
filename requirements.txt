@@ -22,4 +22,13 @@ unstructured
 python-pptx
 langchain-ollama
 
+# ajout pour gemma
+transformers>=4.50.0
+accelerate
+pillow
+einops
+safetensors
+xformers          # optionnel mais utile
+
+
 

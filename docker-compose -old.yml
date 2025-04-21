@@ -1,0 +1,29 @@
+
+# Avant de lancer le conteneur, vérifier que l'image est bien construite en consultant le Dockerfile.
+# Une fois l'image lancée
+# docker compose up --build
+# Si il est déjà créer lancer docker start  langchain_app_v2
+# docker exec -it langchain_app_v2 /bin/bash
+services:
+  app:
+    build: .
+    container_name: langchain_app_v2
+    volumes:
+      - .:/app  # Monte ton dossier actuel dans /app du conteneur
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    ports:
+      - "7860:7860"  # Expose le port 7860
+    extra_hosts:
+      host.docker.internal: host-gateway
+
+    env_file:
+      - .env  # Fichier contenant vos variables d'environnement
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all  # ou le nombre de GPU que tu veux utiliser
+              capabilities: [gpu]
