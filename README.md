@@ -1,31 +1,51 @@
-# Créer des chunks et les mettre en BBD
-A partir du dossier resultats_pdf qui est le resultat de minerU (extraction de pdf)
-1. créer des chunks en json
-2. Modifier ces chunks pour les vectoriser et les envoyer en BDD qdrant
-3. Interroger succintement la BDD pour voir si elle renvoie des reponses alignés avec le sujet de la question
 
+# 🧩 Pipeline de vectorisation de documents PDF avec LangChain + Qdrant
 
-1. créer des chunks en json
-On utilise le script make_chunks.py
-Il prend le dossier resultats_pdf pour en faire des chunks
-Le résultat est le fichier enriched_chunks_all.json
-Il se sert principalement de l'arborescence et du fichier terminant par _content_list.json
-Pour la suite :
-Formater le json au format Eric.
-Le reste des fichiers sont pour l'instant superflues, mais dans un deuxième temps il faudra gérer la description des images
+Ce projet part d’un dossier `resultats_pdf` généré par **MinerU** (outil d’extraction de contenus PDF) pour créer des chunks, les vectoriser et les stocker dans une base Qdrant. Ensuite, on teste la pertinence des réponses retournées.
 
-2. Modifier ces chunks pour les vectoriser et les envoyer en BDD qdrant
-On utilise le script insertion_qdrand.py
-Il prend le fichier enriched_chunks_all.json (chunks formatés en json)
-Il crée les embeddings et envoie tout cela en BDD qdrant
+---
 
-3. Interroger succintement la BDD pour voir si elle renvoie des reponses alignés avec le sujet de la question
-On utilise le script interroger_bdd.py
-Pas de llm utiliser juste une question et des réponses pour tester la pertinence
+# 🧩 Création de chunks & import dans Qdrant
 
-ps : 
-Pour se lier à qdrant à la place de http://lochalhost::6333 on utilise http://host.docker.internal:6333 car on part d'un environnment docker. Donc si vous n'êtes pas sur Docker il faudra utiliser localhost.
+> **Contexte**  
+> Le dossier `resultats_pdf/` est produit par MinerU (extraction des PDF).  
+> On s’en sert pour découper le texte, vectoriser, puis tester rapidement la base.
 
-le dossier resultats_pdf est le resultat de minerU
-Il ne sera pas forcement présent dans ce dossier car assez lourd. Je pourrais le nettoyer pour n'en ressortir que l'arborescence et le fichier _content_list.json.
+---
 
+## 1. Générer les chunks en JSON
+
+| Étape | Script | Détail |
+|-------|--------|--------|
+| Découpage | `make_chunks.py` | Parcourt `resultats_pdf/`, s’appuie sur l’arborescence + les fichiers terminant par `_content_list.json`. |
+| Sortie | – | `enriched_chunks_all.json` |
+| À faire | – | **Formatter le JSON “à la Eric”** et, dans un second temps, gérer les descriptions d’images. |
+
+---
+
+## 2. Embeddings ⚙️ → Qdrant
+
+| Étape | Script | Détail |
+|-------|--------|--------|
+| Vectorisation + envoi | `insertion_qdrant.py` | Lit `enriched_chunks_all.json`, génère les embeddings, pousse le tout dans Qdrant. |
+
+> **URL Qdrant**  
+> ‑ Sous Docker : `http://host.docker.internal:6333`  
+> ‑ Hors Docker : `http://localhost:6333`
+
+---
+
+## 3. Ping‑pong rapide avec la BDD
+
+| Étape | Script | Détail |
+|-------|--------|--------|
+| Test de pertinence | `interroger_bdd.py` | Envoie une question (sans LLM) et affiche les réponses pour vérifier l’alignement sujet/réponse. |
+
+---
+
+## 📝 Notes
+
+* Le dossier `resultats_pdf/` est plutôt lourd ; si besoin on peut le « light‑washer » pour ne garder que l’arborescence et les `_content_list.json`.
+* Pas d’LLM dans la boucle de test : on veut juste valider que les embeddings retombent sur leurs pattes.
+
+---

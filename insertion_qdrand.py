@@ -29,7 +29,7 @@ embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-Mi
 
 # Paramètres de connexion à Qdrant
 qdrant_url = "http://host.docker.internal:6333"
-collection_name = "enriched_chunks_collection"
+collection_name = "test_30_04"
 
 # Initialiser le client Qdrant
 qdrant_client = QdrantClient(url=qdrant_url)
